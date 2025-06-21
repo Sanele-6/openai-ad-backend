@@ -1,13 +1,18 @@
-// api/generate-ad.js
-import { Configuration, OpenAIApi } from "openai";
+const { OpenAIApi, Configuration } = require("openai");
 
-export default async function handler(req, res) {
+module.exports = async (req, res) => {
   if (req.method !== "POST") {
     res.status(405).json({ error: "Method not allowed" });
     return;
   }
 
-  const { description, targetAudience, platform } = req.body;
+  let body = req.body;
+  // If body is a string, parse it (Vercel sometimes sends as string)
+  if (typeof body === "string") {
+    body = JSON.parse(body);
+  }
+
+  const { description, targetAudience, platform } = body;
 
   if (!description || !targetAudience || !platform) {
     res.status(400).json({ error: "Missing required fields" });
@@ -36,4 +41,4 @@ export default async function handler(req, res) {
   const imageUrl = imageResponse.data.data[0].url;
 
   res.status(200).json({ post, image: imageUrl });
-}
+};
