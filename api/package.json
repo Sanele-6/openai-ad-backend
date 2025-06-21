@@ -1,7 +1,7 @@
-   {
-     "name": "openai-ad-backend",
-     "version": "1.0.0",
-     "dependencies": {
-       "openai": "^4.0.0"
-     }
-   }
+{
+  "name": "openai-ad-backend",
+  "version": "1.0.0",
+  "dependencies": {
+    "openai": "^3.2.1"
+  }
+}
