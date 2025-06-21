@@ -1,6 +1,4 @@
-const OpenAI = require("openai");
-
-const openai = new OpenAI(process.env.OPENAI_API_KEY);
+const fetch = require("node-fetch");
 
 module.exports = async (req, res) => {
   if (req.method !== "POST") {
@@ -20,24 +18,42 @@ module.exports = async (req, res) => {
     return;
   }
 
-  // 1. Generate ad post/caption
-  const gptResponse = await openai.complete({
-    engine: "davinci",
-    prompt: `Write a catchy social media post for: ${description}. Target audience: ${targetAudience}. Platform: ${platform}.`,
-    maxTokens: 100,
-    n: 1,
-    stop: null,
-    temperature: 0.7,
+  // 1. Generate text content
+  const chatResponse = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`
+    },
+    body: JSON.stringify({
+      model: "gpt-3.5-turbo",
+      messages: [
+        { role: "system", content: "You are a social media ad copywriter." },
+        { role: "user", content: `Write a catchy social media post for: ${description}. Target audience: ${targetAudience}. Platform: ${platform}.` }
+      ],
+      max_tokens: 100
+    })
   });
-  const post = gptResponse.data.choices[0].text.trim();
 
-  // 2. Generate image (DALL·E 2, v3 not supported in v3 SDK)
-  const imageResponse = await openai.createImage({
-    prompt: `${description}, for ${platform}, targeting ${targetAudience}`,
-    n: 1,
-    size: "1024x1024"
+  const chatData = await chatResponse.json();
+  const post = chatData.choices?.[0]?.message?.content?.trim() || "Failed to generate post.";
+
+  // 2. Generate image
+  const imageResponse = await fetch("https://api.openai.com/v1/images/generations", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`
+    },
+    body: JSON.stringify({
+      prompt: `${description}, for ${platform}, targeting ${targetAudience}`,
+      n: 1,
+      size: "1024x1024"
+    })
   });
-  const imageUrl = imageResponse.data.data[0].url;
+
+  const imageData = await imageResponse.json();
+  const imageUrl = imageData.data?.[0]?.url || null;
 
   res.status(200).json({ post, image: imageUrl });
 };
