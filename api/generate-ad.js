@@ -1,4 +1,6 @@
-const { OpenAIApi, Configuration } = require("openai");
+const OpenAI = require("openai");
+
+const openai = new OpenAI(process.env.OPENAI_API_KEY);
 
 module.exports = async (req, res) => {
   if (req.method !== "POST") {
@@ -7,7 +9,6 @@ module.exports = async (req, res) => {
   }
 
   let body = req.body;
-  // If body is a string, parse it (Vercel sometimes sends as string)
   if (typeof body === "string") {
     body = JSON.parse(body);
   }
@@ -19,20 +20,18 @@ module.exports = async (req, res) => {
     return;
   }
 
-  const openai = new OpenAIApi(new Configuration({ apiKey: process.env.OPENAI_API_KEY }));
-
   // 1. Generate ad post/caption
-  const gptResponse = await openai.createChatCompletion({
-    model: "gpt-4",
-    messages: [
-      { role: "system", content: "You are a social media ad copywriter." },
-      { role: "user", content: `Write a catchy social media post for: ${description}. Target audience: ${targetAudience}. Platform: ${platform}.` }
-    ],
-    max_tokens: 100
+  const gptResponse = await openai.complete({
+    engine: "davinci",
+    prompt: `Write a catchy social media post for: ${description}. Target audience: ${targetAudience}. Platform: ${platform}.`,
+    maxTokens: 100,
+    n: 1,
+    stop: null,
+    temperature: 0.7,
   });
-  const post = gptResponse.data.choices[0].message.content;
+  const post = gptResponse.data.choices[0].text.trim();
 
-  // 2. Generate image
+  // 2. Generate image (DALL·E 2, v3 not supported in v3 SDK)
   const imageResponse = await openai.createImage({
     prompt: `${description}, for ${platform}, targeting ${targetAudience}`,
     n: 1,
